@@ -12,17 +12,26 @@ if(!isset($_SESSION['cart'])) {
     $_SESSION['cart'] = array();
 }
 
-// Add to cart
+// Add to cart DENGAN VALIDASI STOK
 if(isset($_POST['add_to_cart'])) {
     $menu_id = $_POST['menu_id'];
     $quantity = $_POST['quantity'];
     
-    if(isset($_SESSION['cart'][$menu_id])) {
-        $_SESSION['cart'][$menu_id] += $quantity;
+    // Cek stok tersedia
+    $stmt = $conn->prepare("SELECT stock, name FROM menu WHERE id = ?");
+    $stmt->execute([$menu_id]);
+    $menu_data = $stmt->fetch();
+    
+    if($menu_data['stock'] < $quantity) {
+        echo '<script>alert("Maaf, stok tidak cukup! Stok tersisa: ' . $menu_data['stock'] . '");</script>';
     } else {
-        $_SESSION['cart'][$menu_id] = $quantity;
+        if(isset($_SESSION['cart'][$menu_id])) {
+            $_SESSION['cart'][$menu_id] += $quantity;
+        } else {
+            $_SESSION['cart'][$menu_id] = $quantity;
+        }
+        echo '<script>alert("Berhasil ditambahkan ke keranjang!");</script>';
     }
-
 }
 
 // Remove from cart
@@ -53,27 +62,23 @@ $menus = $stmt->fetchAll();
             box-shadow: 0 3px 15px rgba(0,0,0,0.1);
             transition: transform 0.3s;
             margin-bottom: 20px;
-            overflow: hidden; /* Penting agar gambar tidak keluar border */
+            overflow: hidden;
         }
         .menu-card:hover { transform: translateY(-5px); }
-        
-        /* Style Khusus Gambar Menu */
         .menu-img-container {
             height: 200px;
             width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Background default jika loading/error */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
         }
-        
         .menu-photo {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Agar gambar full memenuhi kotak tanpa gepeng */
+            object-fit: cover;
         }
-
         .cart-sidebar {
             position: fixed;
             right: 0;
@@ -115,30 +120,43 @@ $menus = $stmt->fetchAll();
                     <?php foreach($menus as $menu): ?>
                     <div class="col-md-6 col-lg-4">
                         <div class="card menu-card h-100">
-                            <!-- BAGIAN GAMBAR YANG DIPERBAIKI -->
                             <div class="menu-img-container">
                                 <?php if(!empty($menu['image']) && file_exists('uploads/'.$menu['image'])): ?>
-                                    <!-- Jika ada gambar, tampilkan foto -->
                                     <img src="uploads/<?php echo $menu['image']; ?>" class="menu-photo" alt="<?php echo $menu['name']; ?>">
                                 <?php else: ?>
-                                    <!-- Jika TIDAK ada gambar, tampilkan ikon garpu pisau -->
                                     <i class="fas fa-utensils fa-4x text-white"></i>
                                 <?php endif; ?>
                             </div>
-                            <!-- END BAGIAN GAMBAR -->
 
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title"><?php echo $menu['name']; ?></h5>
                                 <p class="card-text text-muted small flex-grow-1"><?php echo $menu['description']; ?></p>
+                                
+                                <!-- TAMPILAN STOK -->
+                                <div class="mb-2">
+                                    <?php if($menu['stock'] <= 0): ?>
+                                        <span class="badge bg-danger">STOK HABIS</span>
+                                    <?php elseif($menu['stock'] < 10): ?>
+                                        <span class="badge bg-warning text-dark">Stok tinggal <?php echo $menu['stock']; ?></span>
+                                    <?php else: ?>
+                                        <span class="badge bg-success">Stok: <?php echo $menu['stock']; ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                
                                 <div class="d-flex justify-content-between align-items-center mt-3">
                                     <h5 class="text-success mb-0 fw-bold">Rp <?php echo number_format($menu['price'], 0, ',', '.'); ?></h5>
+                                    
+                                    <?php if($menu['stock'] > 0): ?>
                                     <form method="POST" class="d-flex align-items-center">
                                         <input type="hidden" name="menu_id" value="<?php echo $menu['id']; ?>">
-                                        <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm me-2 text-center" style="width: 60px;">
+                                        <input type="number" name="quantity" value="1" min="1" max="<?php echo $menu['stock']; ?>" class="form-control form-control-sm me-2 text-center" style="width: 60px;">
                                         <button type="submit" name="add_to_cart" class="btn btn-sm btn-primary">
                                             <i class="fas fa-cart-plus"></i>
                                         </button>
                                     </form>
+                                    <?php else: ?>
+                                    <button class="btn btn-sm btn-secondary" disabled>Habis</button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
