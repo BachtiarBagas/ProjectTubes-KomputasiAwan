@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-$host = 'foodhiveprecious-server.mysql.database.azure.com'; 
+$host = 'foodhivee-server.mysql.database.azure.com'; 
 $dbname = 'food_ordering';
 $username = 'mmlykcgtkp';
 $password = 'sB7IpNr8Hi$ObZGX';
