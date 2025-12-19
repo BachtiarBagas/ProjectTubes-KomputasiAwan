@@ -1,31 +1,28 @@
 <?php
 require_once 'config.php';
-
-// 1. Cek Hak Akses Admin
 if(!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: index.php');
     exit();
 }
 
-// 2. Auto-create folder uploads jika belum ada (Mencegah Error "No such file")
+// Auto-create folder uploads jika belum ada
 if(!is_dir('uploads')) {
     mkdir('uploads', 0777, true);
 }
 
-// 3. Handle Add Menu dengan Upload Gambar
+// Handle Add Menu dengan Upload Gambar & Stok
 if(isset($_POST['add_menu'])) {
     $name = $_POST['name'];
     $desc = $_POST['description'];
     $price = $_POST['price'];
+    $stock = $_POST['stock']; // INPUT STOK BARU
     $cat = $_POST['category_id'];
     
-    // Proses Upload Gambar
     if(isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
         $image_name = $_FILES['image']['name'];
         $image_tmp = $_FILES['image']['tmp_name'];
         $image_ext = strtolower(pathinfo($image_name, PATHINFO_EXTENSION));
         
-        // Generate nama unik agar tidak bentrok
         $new_image_name = uniqid('menu_', true) . '.' . $image_ext;
         $upload_path = 'uploads/' . $new_image_name;
         
@@ -33,51 +30,52 @@ if(isset($_POST['add_menu'])) {
         
         if(in_array($image_ext, $allowed_ext)) {
             if(move_uploaded_file($image_tmp, $upload_path)) {
-                // Simpan nama file ke database
-                $stmt = $conn->prepare("INSERT INTO menu (name, description, price, category_id, image) VALUES (?, ?, ?, ?, ?)");
-                if($stmt->execute([$name, $desc, $price, $cat, $new_image_name])) {
+                $stmt = $conn->prepare("INSERT INTO menu (name, description, price, stock, category_id, image) VALUES (?, ?, ?, ?, ?, ?)");
+                if($stmt->execute([$name, $desc, $price, $stock, $cat, $new_image_name])) {
                     header("Location: admin_menu.php");
                     exit();
-                } else {
-                    echo "<script>alert('Gagal menyimpan ke database!');</script>";
                 }
             } else {
-                echo "<script>alert('Gagal mengupload gambar ke folder!');</script>";
+                echo "<script>alert('Gagal mengupload gambar!');</script>";
             }
         } else {
             echo "<script>alert('Format file harus JPG, JPEG, PNG, atau WEBP!');</script>";
         }
-    } else {
-        echo "<script>alert('Pilih gambar terlebih dahulu!');</script>";
     }
 }
 
-// 4. Handle Delete Menu
-if(isset($_GET['delete'])) {
-    $id = $_GET['delete'];
+// Handle Update Stok
+if(isset($_POST['update_stock'])) {
+    $menu_id = $_POST['menu_id'];
+    $new_stock = $_POST['new_stock'];
     
-    // Ambil info gambar dulu sebelum dihapus
-    $stmt = $conn->prepare("SELECT image FROM menu WHERE id = ?");
-    $stmt->execute([$id]);
-    $menu = $stmt->fetch();
-    
-    // Hapus file fisik gambar jika ada
-    if($menu && !empty($menu['image'])) {
-        $file_path = 'uploads/' . $menu['image'];
-        if(file_exists($file_path)) {
-            unlink($file_path); // Delete file dari folder
-        }
-    }
-    
-    // Hapus data dari database
-    $stmt = $conn->prepare("DELETE FROM menu WHERE id = ?");
-    $stmt->execute([$id]);
-    
+    $stmt = $conn->prepare("UPDATE menu SET stock = ? WHERE id = ?");
+    $stmt->execute([$new_stock, $menu_id]);
     header("Location: admin_menu.php");
     exit();
 }
 
-// 5. Ambil Data Menu untuk Ditampilkan
+// Handle Delete
+if(isset($_GET['delete'])) {
+    $id = $_GET['delete'];
+    
+    $stmt = $conn->prepare("SELECT image FROM menu WHERE id = ?");
+    $stmt->execute([$id]);
+    $menu = $stmt->fetch();
+    
+    if($menu && !empty($menu['image'])) {
+        $file_path = 'uploads/' . $menu['image'];
+        if(file_exists($file_path)) {
+            unlink($file_path);
+        }
+    }
+    
+    $stmt = $conn->prepare("DELETE FROM menu WHERE id = ?");
+    $stmt->execute([$id]);
+    header("Location: admin_menu.php");
+    exit();
+}
+
 $menu_items = $conn->query("SELECT m.*, c.name as category_name FROM menu m JOIN categories c ON m.category_id = c.id ORDER BY m.id DESC");
 $categories = $conn->query("SELECT * FROM categories");
 ?>
@@ -92,11 +90,13 @@ $categories = $conn->query("SELECT * FROM categories");
     <style>
         .img-thumbnail-custom { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 1px solid #ddd; }
         .no-image-placeholder { width: 80px; height: 80px; background: #eee; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #aaa; font-size: 0.8rem; }
+        .stock-low { color: #dc3545; font-weight: bold; }
+        .stock-medium { color: #ffc107; font-weight: bold; }
+        .stock-high { color: #28a745; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container mt-4">
-        <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>
                 <a href="admin_dashboard.php" class="text-dark text-decoration-none me-2">
@@ -109,7 +109,6 @@ $categories = $conn->query("SELECT * FROM categories");
             </button>
         </div>
 
-        <!-- Tabel Menu -->
         <div class="card shadow-sm border-0">
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -120,13 +119,28 @@ $categories = $conn->query("SELECT * FROM categories");
                                 <th>Nama Makanan</th>
                                 <th>Kategori</th>
                                 <th>Harga</th>
-                                <th>Deskripsi</th>
+                                <th>Stok</th>
                                 <th class="text-end pe-4">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if($menu_items->rowCount() > 0): ?>
-                                <?php while($row = $menu_items->fetch()): ?>
+                                <?php while($row = $menu_items->fetch()): 
+                                    // Tentukan warna stok
+                                    $stock_class = 'stock-high';
+                                    if($row['stock'] <= 0) {
+                                        $stock_class = 'stock-low';
+                                        $stock_text = 'HABIS';
+                                    } elseif($row['stock'] < 10) {
+                                        $stock_class = 'stock-low';
+                                        $stock_text = $row['stock'] . ' tersisa';
+                                    } elseif($row['stock'] < 30) {
+                                        $stock_class = 'stock-medium';
+                                        $stock_text = $row['stock'] . ' tersisa';
+                                    } else {
+                                        $stock_text = $row['stock'] . ' tersisa';
+                                    }
+                                ?>
                                 <tr>
                                     <td class="ps-4">
                                         <?php if(!empty($row['image']) && file_exists('uploads/'.$row['image'])): ?>
@@ -138,9 +152,36 @@ $categories = $conn->query("SELECT * FROM categories");
                                     <td class="fw-bold"><?php echo htmlspecialchars($row['name']); ?></td>
                                     <td><span class="badge bg-info text-dark"><?php echo htmlspecialchars($row['category_name']); ?></span></td>
                                     <td class="text-success fw-bold">Rp <?php echo number_format($row['price'], 0, ',', '.'); ?></td>
-                                    <td><small class="text-muted"><?php echo substr(htmlspecialchars($row['description']), 0, 50) . (strlen($row['description']) > 50 ? '...' : ''); ?></small></td>
+                                    <td>
+                                        <span class="<?php echo $stock_class; ?>"><?php echo $stock_text; ?></span>
+                                        <button class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#editStockModal<?php echo $row['id']; ?>">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        
+                                        <!-- Modal Edit Stok -->
+                                        <div class="modal fade" id="editStockModal<?php echo $row['id']; ?>" tabindex="-1">
+                                            <div class="modal-dialog modal-sm modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h6 class="modal-title">Update Stok</h6>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form method="POST">
+                                                        <div class="modal-body">
+                                                            <input type="hidden" name="menu_id" value="<?php echo $row['id']; ?>">
+                                                            <label class="form-label fw-bold"><?php echo $row['name']; ?></label>
+                                                            <input type="number" name="new_stock" class="form-control" value="<?php echo $row['stock']; ?>" min="0" required>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="submit" name="update_stock" class="btn btn-primary btn-sm">Simpan</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td class="text-end pe-4">
-                                        <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Yakin ingin menghapus menu ini secara permanen?')">
+                                        <a href="?delete=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Yakin ingin menghapus menu ini?')">
                                             <i class="fas fa-trash-alt"></i> Hapus
                                         </a>
                                     </td>
@@ -162,14 +203,14 @@ $categories = $conn->query("SELECT * FROM categories");
     </div>
 
     <!-- Modal Tambah Menu -->
-    <div class="modal fade" id="addMenuModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="addMenuModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title"><i class="fas fa-utensils me-2"></i>Tambah Menu Baru</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form method="POST" enctype="multipart/form-data"> <!-- enctype WAJIB untuk upload file -->
+                <form method="POST" enctype="multipart/form-data">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Nama Menu</label>
@@ -179,7 +220,7 @@ $categories = $conn->query("SELECT * FROM categories");
                         <div class="mb-3">
                             <label class="form-label fw-bold">Gambar Menu</label>
                             <input type="file" name="image" class="form-control" accept="image/jpeg, image/png, image/webp" required>
-                            <div class="form-text">Format: JPG, PNG, WEBP (Max 2MB). Disarankan rasio 1:1 (persegi).</div>
+                            <div class="form-text">Format: JPG, PNG, WEBP (Max 2MB).</div>
                         </div>
                         
                         <div class="row">
@@ -188,7 +229,6 @@ $categories = $conn->query("SELECT * FROM categories");
                                 <select name="category_id" class="form-select" required>
                                     <option value="">-- Pilih Kategori --</option>
                                     <?php 
-                                    // Reset pointer query categories
                                     $categories->execute();
                                     while($cat = $categories->fetch()): 
                                     ?>
@@ -198,11 +238,14 @@ $categories = $conn->query("SELECT * FROM categories");
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Harga (Rp)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="number" name="price" class="form-control" placeholder="0" required>
-                                </div>
+                                <input type="number" name="price" class="form-control" placeholder="0" required>
                             </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Stok Tersedia</label>
+                            <input type="number" name="stock" class="form-control" value="100" min="0" required>
+                            <div class="form-text">Jumlah stok yang tersedia untuk dijual</div>
                         </div>
 
                         <div class="mb-3">

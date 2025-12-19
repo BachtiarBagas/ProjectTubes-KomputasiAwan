@@ -1,14 +1,9 @@
 {
-    "_readme": [
-        "This file locks the dependencies of your project to a known state",
-        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
-        "This file is @generated automatically"
-    ],
-    "content-hash": "09895849f12de276db226c9272500f53",
     "packages": [
         {
             "name": "midtrans/midtrans-php",
             "version": "2.6.2",
+            "version_normalized": "2.6.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Midtrans/midtrans-php.git",
@@ -30,7 +25,9 @@
                 "phpunit/phpunit": "5.7.*",
                 "psy/psysh": "0.4.*"
             },
+            "time": "2025-03-18T06:30:17+00:00",
             "type": "library",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "SnapBi\\": "SnapBi/",
@@ -65,16 +62,9 @@
                 "issues": "https://github.com/Midtrans/midtrans-php/issues",
                 "source": "https://github.com/Midtrans/midtrans-php/tree/v2.6.2"
             },
-            "time": "2025-03-18T06:30:17+00:00"
+            "install-path": "../midtrans/midtrans-php"
         }
     ],
-    "packages-dev": [],
-    "aliases": [],
-    "minimum-stability": "stable",
-    "stability-flags": [],
-    "prefer-stable": false,
-    "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
-    "plugin-api-version": "2.3.0"
+    "dev": true,
+    "dev-package-names": []
 }

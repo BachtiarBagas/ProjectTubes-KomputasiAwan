@@ -1,13 +1,13 @@
 <?php 
 require_once 'config.php';
-require_once 'midtrans_config.php';
+require_once 'midtrans_config.php'; // Pastikan file ini ada
 
 if(!isset($_SESSION['user_id']) || empty($_SESSION['cart'])) {
     header('Location: dashboard.php');
     exit();
 }
 
-// Hitung total
+// Hitung total dan siapkan item details untuk Midtrans
 $total = 0;
 $item_details = array();
 
@@ -58,8 +58,8 @@ if(isset($_POST['process_payment'])) {
         
         $customer_details = array(
             'first_name' => $_SESSION['full_name'],
-            'email' => 'customer@example.com', // Sesuaikan jika ada email di session
-            'phone' => '08123456789' // Sesuaikan jika ada phone di session
+            'email' => 'customer@example.com',
+            'phone' => '08123456789'
         );
         
         $transaction = array(
@@ -81,7 +81,12 @@ if(isset($_POST['process_payment'])) {
             exit();
         }
     } else {
-        // Jika Cash, langsung redirect ke success
+        // Jika Cash, kurangi stok langsung lalu redirect
+        foreach($_SESSION['cart'] as $menu_id => $qty) {
+            $stmt = $conn->prepare("UPDATE menu SET stock = stock - ? WHERE id = ?");
+            $stmt->execute([$qty, $menu_id]);
+        }
+        
         unset($_SESSION['cart']);
         header('Location: success.php?order_id=' . $order_id);
         exit();
@@ -98,7 +103,7 @@ if(isset($_POST['process_payment'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Midtrans Snap JS -->
-    <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="MASUKKAN_CLIENT_KEY_ANDA_DISINI"></script>
+    <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="GANTI_DENGAN_CLIENT_KEY_ANDA"></script>
     
     <style>
         body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 0; }
@@ -194,7 +199,6 @@ if(isset($_POST['process_payment'])) {
         // Trigger Midtrans Snap popup
         snap.pay('<?php echo $_SESSION['snap_token']; ?>', {
             onSuccess: function(result) {
-                // Redirect ke halaman sukses
                 window.location.href = 'midtrans_finish.php?order_id=<?php echo $_SESSION['current_order_id']; ?>&status=success';
             },
             onPending: function(result) {
