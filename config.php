@@ -3,8 +3,8 @@ session_start();
 
 $host = 'foodhiveprecious-server.mysql.database.azure.com'; 
 $dbname = 'food_ordering';
-$username = 'gwbzjthykt';
-$password = 'f$Gkc$u$x$iRpSgm';
+$username = 'mmlykcgtkp';
+$password = 'sB7IpNr8Hi$ObZGX';
 
 try {
     // Menambahkan array SSL agar diizinkan oleh Azure
