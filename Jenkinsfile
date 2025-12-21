@@ -2,13 +2,12 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "foodhive-app"
+        DOCKER_IMAGE = 'bagasfathoni/foodhive-app'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Mengambil kode terbaru dari GitHub
                 checkout scm
             }
         }
