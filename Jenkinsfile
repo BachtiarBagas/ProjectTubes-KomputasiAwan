@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Ganti dengan nama image yang kamu inginkan
         DOCKER_IMAGE = "foodhive-app"
     }
 
