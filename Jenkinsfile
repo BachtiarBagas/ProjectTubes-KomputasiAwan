@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = 'bagasfaathoni/foodhive-app' 
+        IMAGE_NAME = 'bagasfathoni/foodhive-app' 
         REGISTRY_CREDENTIALS = 'dockerhub-credentials'
     }
     stages {
@@ -20,7 +20,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS, 
                 usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     // Login ke Docker Hub
-                    bat "docker login -u %USER% -p %PASS%"
+                    bat "echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin"
                     // Push versi spesifik (angka build)
                     bat "docker push %IMAGE_NAME%:%BUILD_NUMBER%"
                     // Tag ke latest dan push lagi
