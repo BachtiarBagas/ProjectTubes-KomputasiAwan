@@ -22,4 +22,4 @@ RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
 
-CMD ["npm", "start"]
+CMD [""php-fpm"", "index.php"]
