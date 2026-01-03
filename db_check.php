@@ -3,7 +3,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 $host = 'foodorder.mysql.database.azure.com';
-$user = 'admin1@foodorder';
+$user = 'admin1';
 $pass = 'place123#';
 $db   = 'foodorder';
 
