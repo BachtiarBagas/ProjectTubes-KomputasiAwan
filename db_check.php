@@ -2,8 +2,8 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-$host = 'foodorder-server.mysql.database.azure.com';
-$user = 'admin1@foodorder-server';
+$host = 'foodorder.mysql.database.azure.com';
+$user = 'admin1@foodorder';
 $pass = 'place123#';
 $db   = 'foodorder';
 
