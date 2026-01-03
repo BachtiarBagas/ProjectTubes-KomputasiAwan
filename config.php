@@ -1,29 +1,19 @@
 <?php
 $host = 'foodorder.mysql.database.azure.com';
-$username = 'admin1';
-$password = 'place123#';
-$db_name = 'foodorder';
+$dbname = 'foodorder';
+$username = 'admin1@foodorder';
+$password = 'PASSWORD_KAMU';
 
-$conn = mysqli_init();
-
-// Azure MySQL WAJIB SSL
-mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
-
-// Koneksi
-if (!mysqli_real_connect(
-    $conn,
-    $host,
-    $username,
-    $password,
-    $db_name,
-    3306,
-    NULL,
-    MYSQLI_CLIENT_SSL
-)) {
-    die("Koneksi Gagal: " . mysqli_connect_error());
+try {
+    $conn = new PDO(
+        "mysql:host=$host;dbname=$dbname;port=3306;charset=utf8mb4",
+        $username,
+        $password,
+        [
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+        ]
+    );
+} catch (PDOException $e) {
+    die("DB ERROR: " . $e->getMessage());
 }
-?>
-
-
-
-
