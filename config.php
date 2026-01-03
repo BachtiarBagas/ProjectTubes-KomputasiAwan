@@ -1,5 +1,5 @@
 <?php
-$host = 'foodorder-server.mysql.database.azure.com';
+$host = 'foodorder.mysql.database.azure.com';
 $username = 'admin1@foodorder-server';
 $password = 'place123#';
 $db_name = 'foodorder';
@@ -25,3 +25,4 @@ if (!mysqli_real_connect(
 
 echo "✅ Berhasil Konek ke Azure MySQL!";
 ?>
+
