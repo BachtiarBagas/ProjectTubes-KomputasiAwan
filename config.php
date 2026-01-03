@@ -1,15 +1,21 @@
 <?php
-session_start();
+$host = 'foodorder-server.mysql.database.azure.com'; // Ganti dengan server name kamu
+$username = 'admin1'; // Ganti dengan username kamu
+$password = 'place123#'; // Ganti dengan password kamu
+$db_name = 'foodorder';
 
-$host = 'localhost';
-$dbname = 'food_ordering';
-$username = 'root';
-$password = '';
+// Inisialisasi koneksi
+$conn = mysqli_init();
 
-try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
+// Azure mewajibkan SSL. Baris ini penting agar tidak ditolak server.
+// NULL = tidak pakai sertifikat file (membiarkan sistem handle atau skip verify)
+mysqli_ssl_set($conn,NULL,NULL,NULL,NULL, NULL);
+
+// Real Connect
+// Perhatikan port 3306 di parameter terakhir
+if (!mysqli_real_connect($conn, $host, $username, $password, $db_name, 3306, NULL, MYSQLI_CLIENT_SSL)) {
+    die("Koneksi Gagal: " . mysqli_connect_error());
 }
-?>s
+
+echo "Berhasil Konek ke Azure!";
+?>
