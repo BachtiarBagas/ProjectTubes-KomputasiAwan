@@ -22,9 +22,8 @@ if (!mysqli_real_connect(
 )) {
     die("Koneksi Gagal: " . mysqli_connect_error());
 }
-
-echo "✅ Berhasil Konek ke Azure MySQL!";
 ?>
+
 
 
 
