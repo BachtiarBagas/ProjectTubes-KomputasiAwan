@@ -1,9 +1,6 @@
-FROM php:8.2-fpm-alpine
+FROM php:8.2-cli-alpine
 
 WORKDIR /var/www/html
-
-# Install dependencies
-RUN apk add --no-cache nginx supervisor
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_mysql
@@ -20,6 +17,7 @@ RUN composer install --no-dev --optimize-autoloader
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html
 
-EXPOSE 80
+EXPOSE 5000
 
-CMD [""php-fpm"", "index.php"]
+# Start PHP built-in server
+CMD ["php", "-S", "0.0.0.0:5000", "-t", "/var/www/html"]
