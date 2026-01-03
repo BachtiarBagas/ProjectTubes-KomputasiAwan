@@ -1,19 +1,15 @@
 <?php
 session_start();
 
-$host = 'foodhivee-server.mysql.database.azure.com'; 
+$host = 'localhost';
 $dbname = 'food_ordering';
-$username = 'mmlykcgtkp';
-$password = 'sB7IpNr8Hi$ObZGX';
+$username = 'root';
+$password = '';
 
 try {
-    // Menambahkan array SSL agar diizinkan oleh Azure
-    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password, array(
-        PDO::MYSQL_ATTR_SSL_CA => true,
-        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
-    ));
+    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch(PDOException $e) {
     die("Connection failed: " . $e->getMessage());
 }
-?>
+?>s
