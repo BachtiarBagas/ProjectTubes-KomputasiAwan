@@ -1,15 +1,25 @@
+
 <?php
-session_start();
+$host = 'foodorder.mysql.database.azure.com';
+$username = 'admin1';
+$password = 'place123#';
+$db_name = 'foodorder';
 
-$host = 'localhost';
-$dbname = 'food_ordering';
-$username = 'root';
-$password = '';
+$conn = mysqli_init();
 
-try {
-    $conn = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    die("Connection failed: " . $e->getMessage());
+mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
+
+// Koneksi
+if (!mysqli_real_connect(
+    $conn,
+    $host,
+    $username,
+    $password,
+    $db_name,
+    3306,
+    NULL,
+    MYSQLI_CLIENT_SSL
+)) {
+    die("Koneksi Gagal: " . mysqli_connect_error());
 }
 ?>
