@@ -31,6 +31,10 @@ services:
     restart: unless-stopped
     ports:
       - "3306:3306"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     environment:
       MYSQL_DATABASE: foodhive_db
       MYSQL_USER: foodhive_user
