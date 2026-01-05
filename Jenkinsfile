@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        IMAGE_NAME = 'bagasfathoni/foodhive-app' 
+        IMAGE_NAME = 'abelchris/foodhive-app' 
         REGISTRY_CREDENTIALS = 'dockerhub-credentials'
         DOCKER_REGISTRY = 'https://registry.hub.docker.com'
     }
