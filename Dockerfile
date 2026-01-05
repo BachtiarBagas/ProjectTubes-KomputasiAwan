@@ -3,7 +3,7 @@ FROM php:8.2-cli-alpine
 WORKDIR /var/www/html
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql
+RUN docker-php-ext-install pdo pdo_mysql mysqli
 
 # Copy composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
