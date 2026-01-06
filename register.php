@@ -1,6 +1,7 @@
 <?php require_once 'config.php'; ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,13 +14,15 @@
             min-height: 100vh;
             padding: 40px 0;
         }
+
         .register-card {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="row justify-content-center">
@@ -27,17 +30,38 @@
                 <div class="register-card p-5">
                     <h2 class="text-center mb-4"><i class="fas fa-user-plus"></i> Registrasi Akun</h2>
                     <?php
-                    if(isset($_POST['register'])) {
-                        $username = $_POST['username'];
-                        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-                        $full_name = $_POST['full_name'];
-                        $email = $_POST['email'];
-                        
-                        $stmt = $conn->prepare("INSERT INTO users (username, password, full_name, email) VALUES (?, ?, ?, ?)");
-                        if($stmt->execute([$username, $password, $full_name, $email])) {
-                            echo '<div class="alert alert-success">Registrasi berhasil! <a href="index.php">Login disini</a></div>';
+                    if (isset($_POST['register'])) {
+                        $username  = trim($_POST['username']);
+                        $password  = password_hash($_POST['password'], PASSWORD_DEFAULT);
+                        $full_name = trim($_POST['full_name']);
+                        $email     = trim($_POST['email']);
+
+                        // 1. Cek username / email sudah ada
+                        $check = $conn->prepare(
+                            "SELECT id FROM users WHERE username = :username OR email = :email"
+                        );
+                        $check->execute([
+                            'username' => $username,
+                            'email'    => $email
+                        ]);
+
+                        if ($check->fetch()) {
+                            echo '<div class="alert alert-danger"> Username atau Email sudah terdaftar </div>';
                         } else {
-                            echo '<div class="alert alert-danger">Registrasi gagal!</div>';
+                            // 2. Insert user baru
+                            $stmt = $conn->prepare("INSERT INTO users (username, password, full_name, email, role) VALUES (:username, :password, :full_name, :email, 'customer') ");
+                            try {
+                                $stmt->execute([
+                                    'username'  => $username,
+                                    'password'  => $password,
+                                    'full_name' => $full_name,
+                                    'email'     => $email
+                                ]);
+
+                                echo '<div class="alert alert-success"> Registrasi berhasil! <a href="index.php">Login di sini</a></div>';} 
+                            catch (PDOException $e) {
+                                echo '<div class="alert alert-danger"> Registrasi gagal: ' . $e->getMessage() . '</div>';
+                             }
                         }
                     }
                     ?>
@@ -65,4 +89,5 @@
         </div>
     </div>
 </body>
+
 </html>
