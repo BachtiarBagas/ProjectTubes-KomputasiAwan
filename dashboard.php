@@ -1,7 +1,19 @@
 <?php 
 require_once 'config.php';
+
+// Debug log
+error_log("Dashboard accessed. Session data: " . print_r($_SESSION, true));
+
+// Cek apakah user sudah login
 if(!isset($_SESSION['user_id'])) {
+    error_log("User not logged in, redirecting to index.php");
     header('Location: index.php');
+    exit();
+}
+
+// Cek apakah user bukan admin
+if(isset($_SESSION['role']) && $_SESSION['role'] == 'admin') {
+    header('Location: admin_dashboard.php');
     exit();
 }
 ?>
@@ -50,22 +62,29 @@ if(!isset($_SESSION['user_id'])) {
 <body>
     <nav class="navbar navbar-custom navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="#"><i class="fas fa-utensils"></i> Food Ordering System</a>
+            <a class="navbar-brand" href="dashboard.php">
+                <i class="fas fa-utensils"></i> Food Ordering System
+            </a>
             <div class="text-white">
-                <i class="fas fa-user-circle"></i> <?php echo $_SESSION['full_name']; ?> 
-                <a href="logout.php" class="btn btn-sm btn-light ms-2">Logout</a>
+                <i class="fas fa-user-circle"></i> 
+                <?php echo htmlspecialchars($_SESSION['full_name']); ?> 
+                <a href="logout.php" class="btn btn-sm btn-light ms-2">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
             </div>
         </div>
     </nav>
     
     <div class="container mt-5">
-        <h2 class="text-center mb-5">Selamat Datang, <?php echo $_SESSION['full_name']; ?>!</h2>
+        <h2 class="text-center mb-5">
+            Selamat Datang, <?php echo htmlspecialchars($_SESSION['full_name']); ?>! 👋
+        </h2>
         <h4 class="text-center mb-4">Pilih Tipe Pesanan Anda</h4>
         
         <div class="row justify-content-center">
             <div class="col-md-5 mb-4">
                 <div class="card order-card dine-in" onclick="location.href='menu.php?type=Dine In'">
-                    <div class="card-body text-center">
+                    <div class="card-body text-center d-flex flex-column justify-content-center">
                         <i class="fas fa-chair order-icon"></i>
                         <h3>Dine In</h3>
                         <p class="mb-0">Makan di tempat</p>
@@ -76,7 +95,7 @@ if(!isset($_SESSION['user_id'])) {
             
             <div class="col-md-5 mb-4">
                 <div class="card order-card take-away" onclick="location.href='menu.php?type=Take Away'">
-                    <div class="card-body text-center">
+                    <div class="card-body text-center d-flex flex-column justify-content-center">
                         <i class="fas fa-shopping-bag order-icon"></i>
                         <h3>Take Away</h3>
                         <p class="mb-0">Bawa pulang</p>
@@ -86,5 +105,7 @@ if(!isset($_SESSION['user_id'])) {
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
