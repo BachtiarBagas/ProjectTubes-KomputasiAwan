@@ -2,7 +2,7 @@
 $host = 'foodgroup.mysql.database.azure.com';
 $username = 'FooodHivee';
 $password = 'place123#';
-$db_name = 'foodorder';
+$db_name = 'foodgroup';
 
 $conn = mysqli_init();
 
