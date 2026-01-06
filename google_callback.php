@@ -1,34 +1,25 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+ini_set('session.cookie_secure', 1);
+ini_set('session.cookie_httponly', 1);
+ini_set('session.cookie_samesite', 'None');
 
-// TAMPILKAN ERROR (untuk debugging sementara)
+session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// =======================
-// GOOGLE CONFIG
-// =======================
-$client_id     = '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com';
-$client_secret = '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';
-$redirect_uri  = 'https://foodsite.azurewebsites.net/google_callback.php';
+// AUTO BASE URL
+$base_url = (!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST';
 
-// =======================
-// CEK CODE GOOGLE
-// =======================
-if (!isset($_GET['code'])) {
-    die("Tidak ada authorization code");
+$client_id     = 'ISI_CLIENT_ID_KAMU';
+$client_secret = 'ISI_CLIENT_SECRET_KAMU';
+$redirect_uri  = $base_url . '/google_callback.php';
+
+// VALIDASI CODE & STATE
+if (!isset($_GET['code']) || !isset($_GET['state']) || $_GET['state'] !== $_SESSION['oauth_state']) {
+    die("OAuth validation failed");
 }
 
-// CEK STATE
-if (!isset($_GET['state']) || $_GET['state'] !== $_SESSION['oauth_state']) {
-    die("Invalid state.");
-}
-
-// =======================
-// AMBIL TOKEN
-// =======================
+// ================= TOKEN =================
 $token_url = 'https://oauth2.googleapis.com/token';
 
 $token_data = http_build_query([
@@ -39,101 +30,66 @@ $token_data = http_build_query([
     'grant_type'    => 'authorization_code'
 ]);
 
-$ch = curl_init();
+$ch = curl_init($token_url);
 curl_setopt_array($ch, [
-    CURLOPT_URL            => $token_url,
     CURLOPT_POST           => true,
     CURLOPT_POSTFIELDS     => $token_data,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_SSL_VERIFYPEER => false,
-    CURLOPT_SSL_VERIFYHOST => false
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2
 ]);
 
 $response = curl_exec($ch);
 curl_close($ch);
 
 $token = json_decode($response, true);
-
 if (!isset($token['access_token'])) {
-    die("Gagal ambil access token");
+    die("Token error");
 }
 
-// =======================
-// AMBIL DATA USER GOOGLE
-// =======================
+// ================= USER INFO =================
 $user_url = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=" . $token['access_token'];
 
-$ch = curl_init();
+$ch = curl_init($user_url);
 curl_setopt_array($ch, [
-    CURLOPT_URL            => $user_url,
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_SSL_VERIFYPEER => false,
-    CURLOPT_SSL_VERIFYHOST => false
+    CURLOPT_SSL_VERIFYPEER => true,
+    CURLOPT_SSL_VERIFYHOST => 2
 ]);
 
 $user_json = curl_exec($ch);
 curl_close($ch);
 
-$user_data = json_decode($user_json, true);
-
-if (!isset($user_data['email'])) {
-    die("Data user Google tidak valid");
+$user = json_decode($user_json, true);
+if (!isset($user['email'])) {
+    die("Invalid Google user data");
 }
 
-$email   = $user_data['email'];
-$name    = $user_data['name']   ?? '';
-$picture = $user_data['picture'] ?? '';
-
-// =======================
-// DATABASE
-// =======================
 require_once "config.php";
 
-try {
+// ================= DATABASE =================
+$stmt = $conn->prepare("SELECT id, full_name FROM users WHERE email = :email LIMIT 1");
+$stmt->execute(['email' => $user['email']]);
+$data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // CEK USER
+if ($data) {
+    $_SESSION['user_id'] = $data['id'];
+    $_SESSION['full_name'] = $data['full_name'];
+} else {
     $stmt = $conn->prepare("
-        SELECT id, full_name 
-        FROM users 
-        WHERE email = :email
+        INSERT INTO users (full_name, email, password, created_at)
+        VALUES (:name, :email, '', NOW())
     ");
-
     $stmt->execute([
-        ':email' => $email
+        'name'  => $user['name'] ?? '',
+        'email' => $user['email']
     ]);
 
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($user) {
-
-        // user sudah ada
-        $_SESSION['user_id']   = $user['id'];
-        $_SESSION['full_name'] = $user['full_name'];
-
-    } else {
-
-        // tambah user baru
-        $stmt = $conn->prepare("
-            INSERT INTO users (full_name, email, password, created_at)
-            VALUES (:full_name, :email, '', NOW())
-        ");
-
-        $stmt->execute([
-            ':full_name' => $name,
-            ':email'     => $email
-        ]);
-
-        $_SESSION['user_id']   = $conn->lastInsertId();
-        $_SESSION['full_name'] = $name;
-    }
-
-    $_SESSION['email'] = $email;
-
-    // REDIRECT
-    header("Location: dashboard.php");
-    exit();
-
-} catch (PDOException $e) {
-
-    die("DB ERROR: " . $e->getMessage());
+    $_SESSION['user_id'] = $conn->lastInsertId();
+    $_SESSION['full_name'] = $user['name'] ?? '';
 }
+
+$_SESSION['email'] = $user['email'];
+
+header("Location: dashboard.php");
+exit;
