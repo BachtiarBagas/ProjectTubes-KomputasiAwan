@@ -12,7 +12,7 @@ ini_set('display_errors', 1);
 // =======================
 $client_id     = '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com';
 $client_secret = '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';
-$redirect_uri  = 'http://localhost:8000/google_callback.php';
+$redirect_uri  = 'https://foodsite.azurewebsites.net/google_callback.php';
 
 // =======================
 // CEK CODE GOOGLE
