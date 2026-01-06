@@ -1,24 +1,23 @@
 <?php
-$host = 'foodgroup.mysql.database.azure.com';
-$username = 'FooodHivee';
-$password = 'place123#';
-$db_name = 'foodgroup';
+session_start();
 
-$conn = mysqli_init();
+$host = "foodgroup.mysql.database.azure.com";
+$db   = "foodgroup";
+$user = "FooodHivee";
+$pass = "place123#";
+$port = 3306;
 
-mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
-
-// Koneksi
-if (!mysqli_real_connect(
-    $conn,
-    $host,
-    $username,
-    $password,
-    $db_name,
-    3306,
-    NULL,
-    MYSQLI_CLIENT_SSL
-)) {
-    die("Koneksi Gagal: " . mysqli_connect_error());
+try {
+    $conn = new PDO(
+        "mysql:host=$host;dbname=$db;port=$port;charset=utf8mb4",
+        $user,
+        $pass,
+        [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false
+        ]
+    );
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
-?>
