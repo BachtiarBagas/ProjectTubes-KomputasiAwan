@@ -1,24 +1,36 @@
 <?php
-$host = 'foodgroup.mysql.database.azure.com';
-$username = 'FooodHivee';
+session_start();
+
+/* =========================
+   DATABASE CONFIG (AZURE)
+   ========================= */
+$host     = 'foodgroup.mysql.database.azure.com';
+$dbname   = 'foodgroup';
+$username = 'FooodHivee@foodgroup'; // ⚠️ WAJIB format user@servername
 $password = 'place123#';
-$db_name = 'foodgroup';
+$port     = 3306;
 
-$conn = mysqli_init();
+/* =========================
+   SSL CERT PATH
+   ========================= */
+// Pastikan file ini ADA di project & ikut ke-push ke GitHub
+$ssl_ca = __DIR__ . '/DigiCertGlobalRootCA.crt.pem';
 
-mysqli_ssl_set($conn, NULL, NULL, NULL, NULL, NULL);
+try {
+    $dsn = "mysql:host=$host;dbname=$dbname;port=$port;charset=utf8mb4";
 
-// Koneksi
-if (!mysqli_real_connect(
-    $conn,
-    $host,
-    $username,
-    $password,
-    $db_name,
-    3306,
-    NULL,
-    MYSQLI_CLIENT_SSL
-)) {
-    die("Koneksi Gagal: " . mysqli_connect_error());
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+
+        // 🔐 SSL Azure (WAJIB)
+        PDO::MYSQL_ATTR_SSL_CA       => $ssl_ca,
+        PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false
+    ];
+
+    $conn = new PDO($dsn, $username, $password, $options);
+
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
-?>
