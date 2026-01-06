@@ -52,31 +52,29 @@
                     <div class="p-5">
                         <?php
                         if (isset($_POST['login'])) {
-                            $username = $_POST['username'];
+                            $username = trim($_POST['username']);
                             $password = $_POST['password'];
 
-                            $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-                            $stmt->execute([$username]);
+                            $stmt = $conn->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
+                            $stmt->execute(['username' => $username]);
                             $user = $stmt->fetch();
 
-                            // LOGIKA LOGIN (USER & ADMIN)
-                            if ($user && password_verify($password, $user['password'])) {
+                            if (!$user) {
+                                echo '<div class="alert alert-danger">Username tidak ditemukan</div>';
+                            } elseif (!password_verify($password, $user['password'])) {
+                                echo '<div class="alert alert-danger">Password salah</div>';
+                            } else {
                                 $_SESSION['user_id'] = $user['id'];
                                 $_SESSION['username'] = $user['username'];
                                 $_SESSION['full_name'] = $user['full_name'];
+                                $_SESSION['role'] = $user['role'] ?? 'customer';
 
-                                // Cek apakah kolom role ada (untuk handle error jika database belum diupdate)
-                                $role = isset($user['role']) ? $user['role'] : 'customer';
-                                $_SESSION['role'] = $role;
-
-                                if ($role == 'admin') {
-                                    header('Location: admin_dashboard.php');
+                                if ($_SESSION['role'] === 'admin') {
+                                    header("Location: admin_dashboard.php");
                                 } else {
-                                    header('Location: dashboard.php');
+                                    header("Location: dashboard.php");
                                 }
-                                exit();
-                            } else {
-                                echo '<div class="alert alert-danger">Username atau password salah!</div>';
+                                exit;
                             }
                         }
                         ?>
