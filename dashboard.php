@@ -53,7 +53,6 @@ if(!isset($_SESSION['user_id'])) {
             <a class="navbar-brand" href="#"><i class="fas fa-utensils"></i> Food Ordering System</a>
             <div class="text-white">
                 <i class="fas fa-user-circle"></i> <?php echo $_SESSION['full_name']; ?>
-                <a href="order_history.php" class="btn btn-sm btn-outline-light ms-2">Riwayat Pesanan</a>
                 <a href="logout.php" class="btn btn-sm btn-light ms-2">Logout</a>
             </div>
         </div>
