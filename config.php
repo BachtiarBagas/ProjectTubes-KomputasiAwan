@@ -34,3 +34,7 @@ try {
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
+<<<<<<< HEAD
+=======
+?>
+>>>>>>> 0da96337b29960fb6c4af6000cf4ad9e88bb7e21
