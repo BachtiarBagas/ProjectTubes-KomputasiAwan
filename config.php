@@ -6,7 +6,7 @@ session_start();
    ========================= */
 $host     = 'foodgroup.mysql.database.azure.com';
 $dbname   = 'foodgroup';
-$username = 'FooodHivee@foodgroup'; // ⚠️ WAJIB format user@servername
+$username = 'FooodHivee'; // 
 $password = 'place123#';
 $port     = 3306;
 
@@ -32,9 +32,4 @@ try {
     $conn = new PDO($dsn, $username, $password, $options);
 
 } catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
-}
-<<<<<<< HEAD
-=======
-?>
->>>>>>> 0da96337b29960fb6c4af6000cf4ad9e88bb7e21
+    die("Database connection failed: " . $e->getMessage());}
