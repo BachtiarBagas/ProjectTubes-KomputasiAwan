@@ -4,9 +4,9 @@
 session_start();
 
 // ============ KONFIGURASI ANDA (Sudah Benar) ============
-$client_id = '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com';
-$client_secret = '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';
-$redirect_uri = 'https://foodsite.azurewebsites.net/google_callback.php';
+$clientID = '610900154866-i2u0cmiclf1d1132a3ag2kjd5ptm30d2.apps.googleusercontent.com';
+$clientSecret = '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';
+$redirectURI = 'https://foodsite.azurewebsites.net/google_callback.php';
 
 // ========================================================
 
