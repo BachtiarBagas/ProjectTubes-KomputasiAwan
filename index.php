@@ -111,7 +111,7 @@ if (isset($_POST['login'])) {
                 <div class="login-card">
                     <div class="login-header">
                         <i class="fas fa-utensils fa-3x mb-3"></i>
-                        <h2>Food Ordering System</h2>
+                        <h2>Food Hive System</h2>
                         <p>Silakan login untuk melanjutkan</p>
                     </div>
                     <div class="p-5">

@@ -61,7 +61,7 @@ $google_config = [
 // ========== REDIRECT URI ==========
 switch ($env) {
     case 'local':
-        $google_config['redirect_uri'] = 'http://localhost:8000/google_callback.php';
+        $google_config['redirect_uri'] = '/https://foodsite.azurewebsites.net//google_callback.php';
         break;
         
     case 'azure':
