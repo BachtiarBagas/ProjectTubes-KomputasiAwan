@@ -1,35 +1,39 @@
 <?php
 session_start();
 
-/* =========================
-   DATABASE CONFIG (AZURE)
-   ========================= */
-$host     = 'foodgroup.mysql.database.azure.com';
-$dbname   = 'foodgroup';
-$username = 'FooodHivee'; // 
-$password = 'place123#';
-$port     = 3306;
+// Deteksi environment (Azure atau local)
+$is_azure = getenv('WEBSITE_SITE_NAME') !== false;
 
-/* =========================
-   SSL CERT PATH
-   ========================= */
-// Pastikan file ini ADA di project & ikut ke-push ke GitHub
-$ssl_ca = __DIR__ . '/DigiCertGlobalRootCA.crt.pem';
-
-try {
-    $dsn = "mysql:host=$host;dbname=$dbname;port=$port;charset=utf8mb4";
-
+if ($is_azure) {
+    // Konfigurasi Azure MySQL
+    $host = getenv('DB_HOST') ?: 'foodgroup.mysql.database.azure.com';
+    $dbname = getenv('DB_NAME') ?: 'foodgroup';
+    $username = getenv('DB_USERNAME') ?: 'FooodHivee';
+    $password = getenv('DB_PASSWORD') ?: 'place123#';
+    $port = 3306;
+    
+    // Azure MySQL memerlukan SSL
     $options = [
-        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,
-
-        // 🔐 SSL Azure (WAJIB)
-        PDO::MYSQL_ATTR_SSL_CA       => $ssl_ca,
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::MYSQL_ATTR_SSL_CA => true,
         PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false
     ];
+} else {
+    // Konfigurasi local
+    $host = 'localhost';
+    $dbname = 'food_ordering';
+    $username = 'root';
+    $password = '';
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+    ];
+}
 
-    $conn = new PDO($dsn, $username, $password, $options);
-
-} catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());}
+try {
+    $conn = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, $options);
+} catch(PDOException $e) {
+    // Log error untuk debugging
+    error_log("Database connection failed: " . $e->getMessage());
+    die("Connection failed. Please check your database configuration.");
+}
+?>

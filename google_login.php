@@ -1,28 +1,38 @@
 <?php
-require_once 'base_url.php'; // Pakai file helper tadi
-session_start();
+// Start session
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// ============ KONFIGURASI GOOGLE ============
-$client_id     = '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com';
-// Pastikan Redirect URI ini SAMA PERSIS dengan yang didaftarkan di Google Cloud Console
-$redirect_uri  = BASE_URL . '/google_callback.php';
+require_once 'google_config.php';
 
-// ============================================
+error_log("Google login initiated");
 
-$scope = 'email profile';
+// Load Google config
+$google_config = include 'google_config.php';
+
+// Generate state untuk keamanan (CSRF protection)
 $state = bin2hex(random_bytes(16));
 $_SESSION['oauth_state'] = $state;
 
-$auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
-    'client_id'     => $client_id,
-    'redirect_uri'  => $redirect_uri,
-    'response_type' => 'code',
-    'scope'         => $scope,
-    'access_type'   => 'offline',
-    'state'         => $state,
-    'prompt'        => 'consent'
-]);
+error_log("Generated state: " . $state);
 
+// Buat Google Auth URL
+$auth_params = [
+    'client_id'     => $google_config['client_id'],
+    'redirect_uri'  => $google_config['redirect_uri'],
+    'response_type' => 'code',
+    'scope'         => $google_config['scope'],
+    'access_type'   => 'online',
+    'state'         => $state,
+    'prompt'        => 'select_account'
+];
+
+$auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($auth_params);
+
+error_log("Redirecting to Google: " . $auth_url);
+
+// Redirect ke Google
 header('Location: ' . $auth_url);
 exit();
 ?>

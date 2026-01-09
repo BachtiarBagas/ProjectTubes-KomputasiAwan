@@ -1,163 +1,170 @@
 <?php
-<<<<<<< HEAD
-require_once 'base_url.php';
-if (session_status() === PHP_SESSION_NONE) session_start();
+// Start session jika belum
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Config
-$client_id     = '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com';
-$client_secret = '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';
-$redirect_uri  = BASE_URL . '/google_callback.php'; // Harus match dengan login
-
-if (!isset($_GET['code'])) die("Error: Tidak ada authorization code.");
-
-// 1. Tukar Code dengan Token
-=======
-ini_set('session.cookie_secure', 1);
-ini_set('session.cookie_httponly', 1);
-ini_set('session.cookie_samesite', 'None');
-
-session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// AUTO BASE URL
-$base_url = (!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST';
+error_log("Google Callback accessed");
+error_log("GET params: " . print_r($_GET, true));
 
-$client_id     = 'ISI_CLIENT_ID_KAMU';
-$client_secret = 'ISI_CLIENT_SECRET_KAMU';
-$redirect_uri  = $base_url . '/google_callback.php';
+// Load Google config
+$google_config = include 'google_config.php';
 
-// VALIDASI CODE & STATE
-if (!isset($_GET['code']) || !isset($_GET['state']) || $_GET['state'] !== $_SESSION['oauth_state']) {
-    die("OAuth validation failed");
+// =======================
+// CEK ERROR DARI GOOGLE
+// =======================
+if (isset($_GET['error'])) {
+    die("Google OAuth Error: " . htmlspecialchars($_GET['error']));
 }
 
-// ================= TOKEN =================
->>>>>>> 0da96337b29960fb6c4af6000cf4ad9e88bb7e21
+if (!isset($_GET['code'])) {
+    die("Error: Tidak ada authorization code dari Google");
+}
+
+// =======================
+// CEK STATE (Security)
+// =======================
+if (!isset($_GET['state']) || !isset($_SESSION['oauth_state']) || $_GET['state'] !== $_SESSION['oauth_state']) {
+    die("Error: Invalid state parameter. Silakan login ulang.");
+}
+
+unset($_SESSION['oauth_state']);
+
+// =======================
+// AMBIL TOKEN
+// =======================
 $token_url = 'https://oauth2.googleapis.com/token';
+
 $token_data = [
     'code'          => $_GET['code'],
-    'client_id'     => $client_id,
-    'client_secret' => $client_secret,
-    'redirect_uri'  => $redirect_uri,
+    'client_id'     => $google_config['client_id'],
+    'client_secret' => $google_config['client_secret'],
+    'redirect_uri'  => $google_config['redirect_uri'],
     'grant_type'    => 'authorization_code'
 ];
 
-<<<<<<< HEAD
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $token_url);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($token_data));
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-// Di Azure, kadang perlu set false jika sertifikat bermasalah, tapi idealnya true
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
-=======
-$ch = curl_init($token_url);
-curl_setopt_array($ch, [
+$curl_options = [
+    CURLOPT_URL            => $token_url,
     CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => $token_data,
+    CURLOPT_POSTFIELDS     => http_build_query($token_data),
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_SSL_VERIFYHOST => 2
-]);
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded'],
+    CURLOPT_TIMEOUT        => 30
+];
 
->>>>>>> 0da96337b29960fb6c4af6000cf4ad9e88bb7e21
+// SSL Configuration
+if (file_exists($google_config['ca_cert_path'])) {
+    $curl_options[CURLOPT_SSL_VERIFYPEER] = true;
+    $curl_options[CURLOPT_CAINFO] = $google_config['ca_cert_path'];
+} else {
+    $curl_options[CURLOPT_SSL_VERIFYPEER] = false;
+    $curl_options[CURLOPT_SSL_VERIFYHOST] = false;
+}
+
+curl_setopt_array($ch, $curl_options);
+
 $response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+$curl_error = curl_error($ch);
 curl_close($ch);
 
-$token = json_decode($response, true);
-<<<<<<< HEAD
-if (!isset($token['access_token'])) die("Gagal ambil token Google.");
+error_log("Token HTTP Code: " . $http_code);
 
-// 2. Ambil Data User
-$user_url = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=" . $token['access_token'];
+if ($curl_error) {
+    die("CURL Error: " . htmlspecialchars($curl_error));
+}
+
+$token = json_decode($response, true);
+
+if (!isset($token['access_token'])) {
+    die("Gagal mendapatkan access token. Error: " . print_r($token, true));
+}
+
+// =======================
+// AMBIL DATA USER GOOGLE
+// =======================
+$user_url = "https://www.googleapis.com/oauth2/v2/userinfo";
 
 $ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $user_url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+$user_curl_options = [
+    CURLOPT_URL            => $user_url,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . $token['access_token']],
+    CURLOPT_TIMEOUT        => 30
+];
+
+if (file_exists($google_config['ca_cert_path'])) {
+    $user_curl_options[CURLOPT_SSL_VERIFYPEER] = true;
+    $user_curl_options[CURLOPT_CAINFO] = $google_config['ca_cert_path'];
+} else {
+    $user_curl_options[CURLOPT_SSL_VERIFYPEER] = false;
+}
+
+curl_setopt_array($ch, $user_curl_options);
+
 $user_json = curl_exec($ch);
+$user_http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 
 $user_data = json_decode($user_json, true);
-$email = $user_data['email'];
-$name  = $user_data['name'];
 
-// 3. Login/Register ke Database
+if (!isset($user_data['email'])) {
+    die("Error: Data user Google tidak valid.");
+}
+
+$email = $user_data['email'];
+$name = $user_data['name'] ?? $email;
+
+// =======================
+// DATABASE
+// =======================
+require_once "config.php";
+
 try {
-    $stmt = $conn->prepare("SELECT id, full_name, role FROM users WHERE email = ?");
+    $stmt = $conn->prepare("SELECT id, username, full_name, role FROM users WHERE email = ?");
     $stmt->execute([$email]);
-    $user = $stmt->fetch();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user) {
         $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
         $_SESSION['full_name'] = $user['full_name'];
-        $_SESSION['role'] = $user['role'];
+        $_SESSION['email'] = $email;
+        $_SESSION['role'] = $user['role'] ?? 'customer';
     } else {
-        $stmt = $conn->prepare("INSERT INTO users (full_name, email, password, role, oauth_provider) VALUES (?, ?, '', 'customer', 'google')");
-        $stmt->execute([$name, $email]);
+        // Create new user
+        $username = explode('@', $email)[0];
+        $username = preg_replace('/[^a-zA-Z0-9]/', '', $username);
+        
+        $counter = 1;
+        $original_username = $username;
+        while (true) {
+            $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+            $stmt->execute([$username]);
+            if (!$stmt->fetch()) break;
+            $username = $original_username . $counter++;
+        }
+        
+        $stmt = $conn->prepare("INSERT INTO users (username, full_name, email, password, role, created_at) VALUES (?, ?, ?, '', 'customer', NOW())");
+        $stmt->execute([$username, $name, $email]);
+        
         $_SESSION['user_id'] = $conn->lastInsertId();
+        $_SESSION['username'] = $username;
         $_SESSION['full_name'] = $name;
+        $_SESSION['email'] = $email;
         $_SESSION['role'] = 'customer';
     }
 
-    // Redirect ke Dashboard setelah sukses
+    error_log("Google login successful: " . $email);
     header("Location: dashboard.php");
     exit();
 
 } catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
     die("Database Error: " . $e->getMessage());
 }
 ?>
-=======
-if (!isset($token['access_token'])) {
-    die("Token error");
-}
-
-// ================= USER INFO =================
-$user_url = "https://www.googleapis.com/oauth2/v2/userinfo?access_token=" . $token['access_token'];
-
-$ch = curl_init($user_url);
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_SSL_VERIFYPEER => true,
-    CURLOPT_SSL_VERIFYHOST => 2
-]);
-
-$user_json = curl_exec($ch);
-curl_close($ch);
-
-$user = json_decode($user_json, true);
-if (!isset($user['email'])) {
-    die("Invalid Google user data");
-}
-
-require_once "config.php";
-
-// ================= DATABASE =================
-$stmt = $conn->prepare("SELECT id, full_name FROM users WHERE email = :email LIMIT 1");
-$stmt->execute(['email' => $user['email']]);
-$data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if ($data) {
-    $_SESSION['user_id'] = $data['id'];
-    $_SESSION['full_name'] = $data['full_name'];
-} else {
-    $stmt = $conn->prepare("
-        INSERT INTO users (full_name, email, password, created_at)
-        VALUES (:name, :email, '', NOW())
-    ");
-    $stmt->execute([
-        'name'  => $user['name'] ?? '',
-        'email' => $user['email']
-    ]);
-
-    $_SESSION['user_id'] = $conn->lastInsertId();
-    $_SESSION['full_name'] = $user['name'] ?? '';
-}
-
-$_SESSION['email'] = $user['email'];
-
-header("Location: dashboard.php");
-exit;
->>>>>>> 0da96337b29960fb6c4af6000cf4ad9e88bb7e21
