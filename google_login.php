@@ -17,7 +17,7 @@ $_SESSION['oauth_state'] = $state;
 // Buat Google Auth URL
 $auth_url = 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
     'client_id'     => $clientID,
-    'redirect_uri'  => $redirect_uri,
+    'redirect_uri'  => $redirectURI,
     'response_type' => 'code',
     'scope'         => $scope,
     'access_type'   => 'offline',
