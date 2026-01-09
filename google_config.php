@@ -1,85 +1,47 @@
 <?php
-/**
- * Google OAuth Configuration - Auto Detect Environment
- * Support Local Development + Azure Production
- */
+// Google OAuth Configuration with Auto Environment Detection
 
-// Prevent direct access & Double Loading check
-if (!defined('GOOGLE_CONFIG_LOADED')) {
-    define('GOOGLE_CONFIG_LOADED', true);
-}
-
-/**
- * Get base URL berdasarkan environment
- * DIBUNGKUS function_exists UNTUK MENCEGAH ERROR REDECLARE
- */
-if (!function_exists('getBaseUrl')) {
-    function getBaseUrl() {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-        $host = $_SERVER['HTTP_HOST'];
-        $port = ($_SERVER['SERVER_PORT'] == 80 || $_SERVER['SERVER_PORT'] == 443) ? '' : ':' . $_SERVER['SERVER_PORT'];
-        return $protocol . $host . $port;
+function getBaseUrl() {
+    // Untuk Azure, SELALU gunakan HTTPS tanpa port
+    if (strpos($_SERVER['HTTP_HOST'], 'azurewebsites.net') !== false) {
+        return 'https://' . explode(':', $_SERVER['HTTP_HOST'])[0]; // Remove port if exists
     }
+    
+    // Untuk local
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+    $host = $_SERVER['HTTP_HOST'];
+    return $protocol . $host;
 }
 
-/**
- * Deteksi environment
- * DIBUNGKUS function_exists UNTUK MENCEGAH ERROR REDECLARE
- */
-if (!function_exists('detectEnvironment')) {
-    function detectEnvironment() {
-        // Azure App Service
-        if (getenv('WEBSITE_SITE_NAME') !== false) {
-            return 'azure';
-        }
-        
-        // Local development
-        $host = strtolower($_SERVER['HTTP_HOST']);
-        if (strpos($host, 'localhost') !== false || 
-            strpos($host, '127.0.0.1') !== false ||
-            strpos($host, '0.0.0.0') !== false) {
-            return 'local';
-        }
-        
-        // Production lainnya
-        return 'production';
-    }
+// Deteksi environment
+$http_host = $_SERVER['HTTP_HOST'];
+$is_azure = (strpos($http_host, 'azurewebsites.net') !== false);
+$is_local = (strpos($http_host, 'localhost') !== false || strpos($http_host, '127.0.0.1') !== false);
+
+// Google OAuth Credentials
+$google_client_id = '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com';
+$google_client_secret = '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';
+
+// Set redirect URI based on environment
+if ($is_azure) {
+    // Production - Azure (SELALU HTTPS, tanpa port)
+    $google_redirect_uri = 'https://foodsite.azurewebsites.net/google_callback.php';
+} elseif ($is_local) {
+    // Local development
+    $google_redirect_uri = 'http://localhost:8000/google_callback.php';
+} else {
+    // Fallback - auto detect
+    $google_redirect_uri = getBaseUrl() . '/google_callback.php';
 }
 
-// Get environment
-$env = detectEnvironment();
-// Gunakan error_log seperlunya agar log server tidak penuh
-// error_log("Google Config - Detected environment: " . $env);
+// Log for debugging
+error_log("Google Config - HTTP_HOST: " . $http_host);
+error_log("Google Config - Is Azure: " . ($is_azure ? 'YES' : 'NO'));
+error_log("Google Config - Redirect URI: " . $google_redirect_uri);
 
-// ========== GOOGLE CREDENTIALS ==========
-$google_config = [
-    'client_id' => '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com',
-    'client_secret' => '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',
-    'scope' => 'email profile https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email openid'
+return [
+    'client_id' => $google_client_id,
+    'client_secret' => $google_client_secret,
+    'redirect_uri' => $google_redirect_uri
 ];
-
-// ========== REDIRECT URI ==========
-switch ($env) {
-    case 'local':
-        $google_config['redirect_uri'] = '/https://foodsite.azurewebsites.net//google_callback.php';
-        break;
-        
-    case 'azure':
-        $app_url = getenv('APP_URL') ?: getBaseUrl();
-        $google_config['redirect_uri'] = rtrim($app_url, '/') . '/google_callback.php';
-        break;
-        
-    case 'production':
-        $app_url = getenv('APP_URL') ?: getBaseUrl();
-        $google_config['redirect_uri'] = rtrim($app_url, '/') . '/google_callback.php';
-        break;
-}
-
-// error_log("Google Config - Redirect URI: " . $google_config['redirect_uri']);
-
-// ========== SSL CERTIFICATE PATH ==========
-$google_config['ca_cert_path'] = __DIR__ . '/cacert.pem';
-
-// ========== RETURN CONFIG ==========
-return $google_config;
 ?>

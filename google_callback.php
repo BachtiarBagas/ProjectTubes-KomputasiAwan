@@ -10,8 +10,12 @@ ini_set('display_errors', 1);
 error_log("Google Callback accessed");
 error_log("GET params: " . print_r($_GET, true));
 
-// Load Google config
-$google_config = include 'google_config.php';
+// =======================
+// GOOGLE CONFIG
+// =======================
+$client_id     = '889173134800-v3a3gvg12u85oops6gbkvjqf5kihpb93.apps.googleusercontent.com';
+$client_secret = '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';
+$redirect_uri  = 'https://foodsite.azurewebsites.net/google_callback.php';
 
 // =======================
 // CEK ERROR DARI GOOGLE
@@ -30,8 +34,6 @@ if (!isset($_GET['code'])) {
 if (!isset($_GET['state']) || !isset($_SESSION['oauth_state']) || $_GET['state'] !== $_SESSION['oauth_state']) {
     die("Error: Invalid state parameter. Silakan login ulang.");
 }
-
-unset($_SESSION['oauth_state']);
 
 // =======================
 // AMBIL TOKEN
